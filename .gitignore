@@ -1,0 +1,15 @@
+# secrets
+.env
+
+# data (downloaded / rebuilt by main.py)
+data/raw/
+data/processed/
+
+# run logs (contain local paths)
+results/models/*log*.txt
+
+# python / tooling
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+.claude/settings.local.json

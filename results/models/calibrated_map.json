@@ -1,0 +1,22 @@
+{
+ "tiers": [
+  5,
+  10,
+  20,
+  50,
+  100
+ ],
+ "weights": [
+  0.0,
+  0.0,
+  0.0,
+  0.5,
+  0.5
+ ],
+ "half_life_h": null,
+ "side_split": "symmetric",
+ "train_pearson_log": 0.4972379881038234,
+ "test_pearson_log": 0.489886134023767,
+ "train_test_rank_corr_over_grid": 0.9728005920208384,
+ "grid_size": 560
+}

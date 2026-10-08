@@ -1,0 +1,2 @@
+spec,pct_of_ratio_all_snapshots,pct_within_same_direction,share_time_ratio_ge_2.5,share_time_ratio_ge_3.06,share_time_large_down,median_ratio,p90_ratio,p99_ratio
+w10,0.979466,0.976665,0.0475851,0.0205342,0.507005,1.34773,2.09428,3.60932

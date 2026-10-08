@@ -1,0 +1,83 @@
+# BTC liquidation imbalance study - configuration
+# All timestamps are UTC. Every parameter used anywhere in the pipeline lives here,
+# so the full specification grid is auditable.
+
+seed: 20261007
+
+data:
+  symbol: BTCUSDT
+  base_url: https://data.binance.vision/data/futures/um
+  rest_url: https://fapi.binance.com
+  klines_start: "2019-12"        # warm-up for 200D MA before metrics start
+  metrics_start: "2020-09-01"    # first available Binance metrics day
+  end_date: "2026-10-06"         # last complete UTC day at time of study
+  download_workers: 12
+
+liquidation_map:
+  # Binance publishes no historical liquidation map. We reconstruct one from
+  # 5m open-interest changes (standard OI-delta liquidation-level model).
+  grid_step_log: 0.001           # log-price bin width (~0.1%)
+  grid_min_price: 3000
+  grid_max_price: 400000
+  leverage_tiers: [10, 25, 50, 100]
+  leverage_weights: [0.40, 0.30, 0.20, 0.10]
+  maintenance_margin: 0.004
+  entry_price: typical           # (H+L+C)/3 of the 5m bar
+  max_snapshot_age_min: 15       # signals with older OI snapshot are invalid
+  max_gap_for_continuity_min: 60 # OI gaps longer than this mark map as degraded
+  degraded_cooldown_h: 24        # map flagged degraded this long after a large gap
+  variants:
+    M1:                          # baseline: symmetric long/short, no decay
+      side_split: symmetric
+      decay_half_life_h: null
+    M2:                          # robustness: account-ratio tilt + 72h decay
+      side_split: account_ratio
+      decay_half_life_h: 72
+    M3:                          # calibrated on real liquidations (Tardis free days, train half); see MAP_VALIDATION
+      side_split: symmetric
+      decay_half_life_h: null
+      leverage_tiers: [5, 10, 20, 50, 100]
+      leverage_weights: [0.0, 0.0, 0.0, 0.5, 0.5]
+
+features:
+  windows: [0.03, 0.05, 0.075, 0.10, 0.125, 0.15]
+  main_window: 0.10
+  distance_floor: 0.0025
+  exp_k: [20, 50]
+  cluster_cum_levels: [0.25, 0.50, 0.75]
+  cluster_range: 0.15
+  delta_lags_min: [15, 60, 240, 720, 1440]
+
+events:
+  enter: 2.5
+  exit: 2.0
+  cooldowns_h: [6, 12, 24, 48]
+  main_cooldown_h: 24
+
+ratio_buckets: [1.0, 1.25, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 5.0, 7.5, .inf]
+core_buckets: ["2.5-3", "3-3.5", "3.5-4", "4-5"]
+
+outcomes:
+  horizons_min: [15, 30, 60, 120, 240, 480, 720, 1440, 2880, 4320, 10080]
+  mfe_horizons_min: [60, 240, 720, 1440, 4320, 10080]
+  thresholds: [0.005, 0.01, 0.02, 0.03, 0.05, 0.075, 0.10]
+  fp_window_min: 10080           # first-passage window (censored after)
+  fp_window_short_min: 1440      # robustness window
+
+regimes:
+  trend_ma_days: 50
+  slope_days: 10
+  vol_min_history_days: 90
+  funding_positive_above: 0.0001 # >0.01%/8h (Binance default rate) = positive; <0 = negative; else neutral
+
+stats:
+  n_boot: 2000
+  block_len_events: 10
+  extreme_daily_move: 0.08
+  extreme_vol_pct: 0.99
+  oos_split: 0.70
+
+backtest:
+  fee_bps: 5                     # per side, taker
+  slippage_bps: 2                # per side
+  exits_min: [240, 720, 1440, 4320]
